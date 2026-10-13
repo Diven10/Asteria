@@ -12,13 +12,11 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# We explicitly need Jinja2 for our new HTML templates
-RUN pip install --no-cache-dir jinja2
-
 COPY . .
 
-# Expose port 8000
+# Expose standard port
 EXPOSE 8000
 
-# Start FastAPI server
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start server honoring $PORT environment variable (Render / Railway / Cloud Run default)
+CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+
