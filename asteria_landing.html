@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASTERIA | Exoplanet Detection</title>
+    
+    <!-- Tailwind CSS for rapid styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Space Grotesk for Headings, Inter for Body -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        space: '#0A0B14',
+                        starlight: '#4B7BF5',
+                        starlight_glow: 'rgba(75, 123, 245, 0.5)',
+                        magenta: '#B3589A',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS for Glassmorphism & Animations -->
+    <style>
+        body {
+            background-color: #0A0B14;
+            color: #E2E8F0;
+            overflow-x: hidden;
+        }
+
+        .bg-hero {
+            /* We stack a radial gradient in the bottom right corner to seamlessly hide the "Artist's Concept" watermark */
+            background-image: radial-gradient(ellipse at bottom right, rgba(10,11,20,1) 0%, rgba(10,11,20,0.95) 10%, rgba(10,11,20,0) 25%),
+                              linear-gradient(to right, rgba(10,11,20,0.95) 0%, rgba(10,11,20,0.3) 50%, rgba(10,11,20,0.6) 100%), 
+                              url('https://www.nasa.gov/wp-content/uploads/2026/10/stsci-01m3cbk3t6srkp4q7wv9cgfgw9.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        .bg-galaxy {
+            background-image: linear-gradient(to bottom, rgba(10,11,20,1) 0%, rgba(10,11,20,0.7) 30%, rgba(10,11,20,0.7) 70%, rgba(10,11,20,1) 100%), 
+                              url('https://www.nasa.gov/wp-content/uploads/2026/09/m101-lg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(10, 11, 20, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-hover:hover {
+            border-color: rgba(179, 88, 154, 0.8); /* Magenta glow on hover */
+            box-shadow: 0 0 25px rgba(179, 88, 154, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .glow-text {
+            text-shadow: 0 0 20px rgba(75, 123, 245, 0.6);
+        }
+        
+        .btn-glow {
+            box-shadow: 0 0 15px rgba(75, 123, 245, 0.4);
+            transition: all 0.3s ease;
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 25px rgba(75, 123, 245, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-hero min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- NAVIGATION -->
+    <nav class="w-full p-6 flex justify-between items-center fixed top-0 z-50 glass border-b-0 border-white/5">
+        <a href="#" id="nav-logo" class="font-display font-bold text-2xl text-white tracking-widest glow-text opacity-0 transition-opacity duration-500 hover:text-starlight">ASTERIA</a>
+        <div class="hidden md:flex space-x-8 text-sm uppercase tracking-wide">
+            <a href="#mission" class="hover:text-starlight transition">Mission</a>
+            <a href="#architecture" class="hover:text-starlight transition">Architecture</a>
+            <a href="#pipeline" class="hover:text-starlight transition">Pipeline</a>
+            <a href="/docs" target="_blank" rel="noopener noreferrer" class="hover:text-starlight transition">API Docs</a>
+        </div>
+        <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="bg-white/10 border border-white/20 px-4 py-2 rounded text-sm hover:bg-white/20 transition text-white inline-flex items-center gap-2">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            GitHub
+        </a>
+    </nav>
+
+    <!-- SECTION 1: HERO -->
+    <section class="min-h-screen flex items-center px-6 md:px-20 pt-20">
+        <div class="max-w-3xl">
+            <h1 class="font-display text-7xl md:text-8xl font-bold text-white mb-6 tracking-tight glow-text leading-tight">
+                ASTERIA
+            </h1>
+            <p class="text-xl md:text-2xl text-starlight mb-10 font-light leading-relaxed max-w-2xl">
+                AI-Enabled Exoplanet Detection from Noisy Astronomical Light Curves.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-6">
+                <!-- Links to the Mission Selector -->
+                <a href="/select" class="inline-flex items-center justify-center bg-starlight text-white font-bold py-4 px-8 rounded-full btn-glow tracking-wide uppercase text-sm hover:scale-105 active:scale-95 transition-all duration-200">
+                    Launch Pipeline
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </a>
+                <a href="#mission" class="inline-flex items-center justify-center glass text-white font-bold py-4 px-8 rounded-full border border-magenta hover:bg-magenta/20 hover:border-magenta hover:scale-105 active:scale-95 transition-all duration-200 tracking-wide uppercase text-sm">
+                    Read the Science
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: THE MISSION -->
+    <section id="mission" class="min-h-screen flex flex-col justify-center py-24 px-6 md:px-20 bg-space/80">
+        <div class="max-w-6xl mx-auto glass p-10 md:p-16 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center border-white/10">
+            <div>
+                <h2 class="font-display text-4xl text-white font-bold mb-6">Decoding the Cosmos.</h2>
+                <p class="text-lg text-gray-300 leading-relaxed mb-6">
+                    Finding exoplanets in raw TESS satellite data is like finding a needle in a cosmic haystack. Eclipsing binaries, stellar flares, and instrument noise constantly mimic planetary transits.
+                </p>
+                <p class="text-lg text-gray-300 leading-relaxed mb-8">
+                    ASTERIA leverages advanced Machine Learning and astrophysical rule-sets to cut through the noise, isolating true planets with high confidence.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <button id="open-science-btn" class="inline-flex items-center bg-magenta/20 border border-magenta/50 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-magenta/30 hover:border-magenta hover:scale-105 transition-all tracking-wide shadow-[0_0_15px_rgba(179,88,154,0.3)]">
+                        <svg class="w-4 h-4 mr-2 text-magenta" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        Scientific Methodology
+                    </button>
+                    <a href="#pipeline" class="inline-flex items-center bg-white/10 border border-white/20 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-white/20 hover:scale-105 transition-all tracking-wide">
+                        View Pipeline Spec →
+                    </a>
+                </div>
+            </div>
+            <!-- Interactive Light Curve Demonstration Card -->
+            <div class="rounded-xl border border-white/10 bg-black/60 p-6 flex flex-col justify-between relative overflow-hidden shadow-2xl">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></span>
+                        <span class="font-mono text-xs text-green-400 uppercase tracking-wider">TESS Simulation</span>
+                    </div>
+                    <span id="curve-status" class="font-mono text-xs text-starlight border border-starlight/30 px-2 py-0.5 rounded bg-starlight/10">Transit Dip: -1.5%</span>
+                </div>
+                
+                <!-- SVG Transit Curve Canvas -->
+                <div class="h-40 w-full relative flex items-center justify-center">
+                    <svg id="interactive-curve-svg" class="w-full h-full overflow-visible" viewBox="0 0 300 100">
+                        <line x1="0" y1="20" x2="300" y2="20" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4" />
+                        <line x1="0" y1="50" x2="300" y2="50" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4" />
+                        <line x1="0" y1="80" x2="300" y2="80" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4" />
+                        <path id="curve-path" d="M 0 35 Q 70 35, 110 37 Q 130 37, 140 75 Q 150 82, 160 75 Q 170 37, 190 37 Q 240 35, 300 35" fill="none" stroke="#4B7BF5" stroke-width="3" stroke-linecap="round" style="filter: drop-shadow(0 0 8px rgba(75,123,245,0.7)); transition: all 0.5s ease;" />
+                    </svg>
+                </div>
+                
+                <!-- Interactive Controls for the demo -->
+                <div class="mt-4 pt-3 border-t border-white/10 flex justify-between items-center">
+                    <span class="text-xs text-white/50 font-mono">Interactive Curve</span>
+                    <div class="flex space-x-2">
+                        <button id="btn-toggle-dip" class="text-xs font-mono px-3 py-1.5 bg-starlight/20 hover:bg-starlight/40 text-starlight hover:text-white border border-starlight/40 rounded transition">
+                            Trigger Transit
+                        </button>
+                        <button id="btn-add-noise" class="text-xs font-mono px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/80 rounded transition">
+                            Toggle Noise
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: CORE ARCHITECTURE -->
+    <section id="architecture" class="min-h-screen flex flex-col justify-center py-24 px-6 md:px-20 border-t border-white/5">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="font-display text-4xl text-white font-bold mb-16 text-center">Core Architecture</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- Card 1 -->
+                <div class="glass glass-hover p-10 rounded-2xl">
+                    <div class="text-starlight mb-4">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    </div>
+                    <h3 class="font-display text-2xl text-white font-bold mb-4">Automated Ingestion</h3>
+                    <p class="text-gray-400 leading-relaxed">Pulls raw light curves directly from the NASA MAST archive using TIC IDs, gracefully handling missing data and edge cases.</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass glass-hover p-10 rounded-2xl">
+                    <div class="text-starlight mb-4">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <h3 class="font-display text-2xl text-white font-bold mb-4">Algorithmic Detection</h3>
+                    <p class="text-gray-400 leading-relaxed">Utilizes Box Least Squares (BLS) periodograms to mathematically scan and extract periodic transit candidates from stellar noise.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="glass glass-hover p-10 rounded-2xl">
+                    <div class="text-starlight mb-4">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <h3 class="font-display text-2xl text-white font-bold mb-4">XGBoost Classification</h3>
+                    <p class="text-gray-400 leading-relaxed">Evaluates candidates against complex feature vectors to generate a probability score, separating true planets from false positives.</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="glass glass-hover p-10 rounded-2xl">
+                    <div class="text-starlight mb-4">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <h3 class="font-display text-2xl text-white font-bold mb-4">Explainable AI (XAI)</h3>
+                    <p class="text-gray-400 leading-relaxed">Complete transparency. ASTERIA uses SHAP values to explain exactly why the AI made its decision, ensuring scientific trust.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: PIPELINE -->
+    <!-- We make the container 400vh to create a long scrolling track -->
+    <section id="pipeline-container" class="relative h-[400vh] bg-galaxy border-t border-b border-white/5">
+        <!-- Target Anchor for #pipeline navigation -->
+        <div id="pipeline" class="absolute -top-20"></div>
+        <div class="sticky top-0 h-screen flex flex-col justify-center px-4 md:px-20 w-full overflow-hidden">
+            <div class="max-w-4xl mx-auto text-center w-full relative">
+                <h2 class="font-display text-4xl md:text-5xl text-white font-bold mb-10 drop-shadow-lg">The 6-Step Pipeline</h2>
+                
+                <!-- Zig-Zag Grid Container - Pulled closer together -->
+                <div class="relative w-full h-[380px] md:h-[450px] mx-auto mt-4">
+                    <!-- SVG Background Line -->
+                    <svg id="pipeline-svg" class="absolute inset-0 w-full h-full -z-10">
+                        <defs>
+                            <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#4B7BF5" />
+                                <stop offset="100%" stop-color="#B3589A" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Base track (dim) -->
+                        <path id="svg-base" stroke="rgba(255,255,255,0.1)" stroke-width="14" fill="none" stroke-linecap="round" />
+                        <!-- Animated progress line -->
+                        <path id="svg-progress" stroke="url(#line-gradient)" stroke-width="14" fill="none" stroke-linecap="round" style="filter: drop-shadow(0px 0px 15px rgba(75,123,245,0.8)); transition: none;" />
+                    </svg>
+
+                    <!-- Step 1: Top Left -->
+                    <div class="pipeline-step absolute left-[30%] top-[10%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                        <div class="step-circle w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/20 flex items-center justify-center text-white/30 font-bold transition-all duration-300 ease-out z-10 text-lg md:text-xl">1</div>
+                        <span class="step-text text-white/30 font-semibold transition-all duration-300 ease-out tracking-wide mt-2 md:mt-3 absolute top-full md:text-lg">Ingest</span>
+                    </div>
+
+                    <!-- Step 2: Top Right -->
+                    <div class="pipeline-step absolute left-[70%] top-[10%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                        <div class="step-circle w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/20 flex items-center justify-center text-white/30 font-bold transition-all duration-300 ease-out z-10 text-lg md:text-xl">2</div>
+                        <span class="step-text text-white/30 font-semibold transition-all duration-300 ease-out tracking-wide mt-2 md:mt-3 absolute top-full md:text-lg">Preprocess</span>
+                    </div>
+
+                    <!-- Step 3: Mid Right -->
+                    <div class="pipeline-step absolute left-[70%] top-[50%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                        <div class="step-circle w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/20 flex items-center justify-center text-white/30 font-bold transition-all duration-300 ease-out z-10 text-lg md:text-xl">3</div>
+                        <span class="step-text text-white/30 font-semibold transition-all duration-300 ease-out tracking-wide mt-2 md:mt-3 absolute top-full md:text-lg">Detect</span>
+                    </div>
+
+                    <!-- Step 4: Mid Left -->
+                    <div class="pipeline-step absolute left-[30%] top-[50%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                        <div class="step-circle w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/20 flex items-center justify-center text-white/30 font-bold transition-all duration-300 ease-out z-10 text-lg md:text-xl">4</div>
+                        <span class="step-text text-white/30 font-semibold transition-all duration-300 ease-out tracking-wide mt-2 md:mt-3 absolute top-full md:text-lg">Validate</span>
+                    </div>
+
+                    <!-- Step 5: Bottom Left -->
+                    <div class="pipeline-step absolute left-[30%] top-[90%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                        <div class="step-circle w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/20 flex items-center justify-center text-white/30 font-bold transition-all duration-300 ease-out z-10 text-lg md:text-xl">5</div>
+                        <span class="step-text text-white/30 font-semibold transition-all duration-300 ease-out tracking-wide mt-2 md:mt-3 absolute top-full md:text-lg">Score</span>
+                    </div>
+
+                    <!-- Step 6: Bottom Right -->
+                    <div class="pipeline-step absolute left-[70%] top-[90%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                        <div class="step-circle w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/20 flex items-center justify-center text-white/30 font-bold transition-all duration-300 ease-out z-10 text-lg md:text-xl">6</div>
+                        <span class="step-text text-white/30 font-semibold transition-all duration-300 ease-out tracking-wide mt-2 md:mt-3 absolute top-full md:text-lg">Report</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scroll Animation Script for SVG Pipeline -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const container = document.getElementById('pipeline-container');
+            const path = document.getElementById('svg-progress');
+            const basePath = document.getElementById('svg-base');
+            const steps = document.querySelectorAll('.pipeline-step');
+            
+            if(!container || !path || !steps.length) return;
+
+            let pathLength = 0;
+            
+            // This function completely bypasses browser scaling bugs by manually drawing the SVG 
+            // in exact physical pixels that precisely match your screen size.
+            function buildSVGPath() {
+                const w = container.offsetWidth;
+                const h = container.offsetHeight;
+                
+                const svg = document.getElementById('pipeline-svg');
+                svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+                
+                // Absolute positions matching the 30% / 70% left and 10% / 50% / 90% top CSS
+                const x1 = w * 0.3;
+                const x2 = w * 0.7;
+                const y1 = h * 0.1;
+                const y2 = h * 0.5;
+                const y3 = h * 0.9;
+                
+                // Curve radius to make a perfect semi-circle snake bend
+                const dx = (y2 - y1) * 0.6;
+                
+                // Draw: Line right -> Curve down & left -> Line left -> Curve down & right -> Line right
+                const d = `M ${x1} ${y1} L ${x2} ${y1} C ${x2 + dx} ${y1}, ${x2 + dx} ${y2}, ${x2} ${y2} L ${x1} ${y2} C ${x1 - dx} ${y2}, ${x1 - dx} ${y3}, ${x1} ${y3} L ${x2} ${y3}`;
+                
+                basePath.setAttribute('d', d);
+                path.setAttribute('d', d);
+                
+                pathLength = path.getTotalLength();
+                // Add a small buffer to the gap so it doesn't wrap around
+                path.style.strokeDasharray = `${pathLength} ${pathLength + 50}`; 
+                path.style.strokeDashoffset = pathLength;
+                
+                updatePipeline();
+            }
+
+            let ticking = false;
+
+            const updatePipeline = () => {
+                const rect = container.getBoundingClientRect();
+                const windowHeight = window.innerHeight;
+                
+                let progress = 0;
+                if (rect.top <= 0) {
+                    const scrolled = -rect.top;
+                    const totalScrollable = rect.height - windowHeight;
+                    progress = Math.min(1, Math.max(0, scrolled / totalScrollable)); // 0.0 to 1.0
+                }
+                
+                // Exact pixel offset means absolutely zero dashing artifacts
+                path.style.strokeDashoffset = pathLength - (progress * pathLength);
+                
+                const thresholds = [0, 0.20, 0.45, 0.55, 0.80, 0.99];
+                
+                steps.forEach((step, index) => {
+                    const circle = step.querySelector('.step-circle');
+                    const text = step.querySelector('.step-text');
+                    const isMagenta = index >= 3; 
+                    
+                    if (progress >= thresholds[index]) {
+                        if (isMagenta) {
+                            circle.classList.add('bg-magenta/30', 'border-magenta', 'text-white', 'shadow-[0_0_30px_#B3589A]', 'scale-110');
+                            circle.classList.remove('bg-black/40', 'border-white/20', 'text-white/30');
+                        } else {
+                            circle.classList.add('bg-starlight/30', 'border-starlight', 'text-white', 'shadow-[0_0_30px_#4B7BF5]', 'scale-110');
+                            circle.classList.remove('bg-black/40', 'border-white/20', 'text-white/30');
+                        }
+                        text.classList.add('text-white');
+                        text.classList.remove('text-white/30');
+                        text.style.textShadow = '0 0 10px rgba(255,255,255,0.5)';
+                    } else {
+                        if (isMagenta) {
+                            circle.classList.remove('bg-magenta/30', 'border-magenta', 'text-white', 'shadow-[0_0_30px_#B3589A]', 'scale-110');
+                        } else {
+                            circle.classList.remove('bg-starlight/30', 'border-starlight', 'text-white', 'shadow-[0_0_30px_#4B7BF5]', 'scale-110');
+                        }
+                        circle.classList.add('bg-black/40', 'border-white/20', 'text-white/30');
+                        text.classList.remove('text-white');
+                        text.classList.add('text-white/30');
+                        text.style.textShadow = 'none';
+                    }
+                });
+            };
+
+            window.addEventListener('resize', () => {
+                buildSVGPath();
+            });
+
+            document.addEventListener('scroll', () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        updatePipeline();
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            });
+            
+            // Build the SVG geometry precisely for this screen size on load
+            buildSVGPath();
+        });
+    </script>
+
+    <!-- SECTION 5: CTA & FOOTER -->
+    <section class="min-h-screen flex flex-col justify-center items-center py-32 px-6 text-center">
+        <h2 class="font-display text-5xl text-white font-bold mb-8 glow-text">Ready to discover the unknown?</h2>
+        <a href="/select" class="inline-flex items-center bg-starlight text-white font-bold py-5 px-12 rounded-full btn-glow tracking-widest uppercase text-lg mt-4 hover:scale-105 active:scale-95 transition-all duration-200">
+            Access ML Dashboard
+            <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </a>
+    </section>
+
+    <footer class="glass border-t border-white/10 py-8 px-6 text-center md:flex md:justify-between md:text-left text-sm text-gray-500">
+        <div>Built by Team Power Rangers</div>
+        <div class="mt-4 md:mt-0">Data courtesy of NASA Exoplanet Archive & MAST</div>
+        <div class="mt-4 md:mt-0 flex flex-wrap justify-center gap-6">
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="hover:text-white transition flex items-center gap-1.5">
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                GitHub
+            </a>
+            <a href="/docs" target="_blank" rel="noopener noreferrer" class="hover:text-white transition flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                API Docs
+            </a>
+            <a href="/select" class="hover:text-starlight text-white/70 transition">
+                Mission Selector
+            </a>
+            <a href="#" class="hover:text-white transition">
+                ↑ Back to Top
+            </a>
+        </div>
+    </footer>
+
+    <!-- SCIENTIFIC METHODOLOGY MODAL -->
+    <div id="science-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass max-w-3xl w-full p-8 md:p-10 rounded-3xl border border-white/20 relative shadow-[0_0_50px_rgba(75,123,245,0.2)] max-h-[90vh] overflow-y-auto">
+            <button id="close-science-modal" class="absolute top-6 right-6 text-white/50 hover:text-white p-2 rounded-full hover:bg-white/10 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <div class="flex items-center space-x-3 mb-6">
+                <span class="w-3 h-3 rounded-full bg-magenta"></span>
+                <span class="font-mono text-xs uppercase tracking-widest text-magenta">ASTERIA Scientific Specification</span>
+            </div>
+            <h3 class="font-display text-3xl font-bold text-white mb-4">Transit Photometry & Machine Learning Architecture</h3>
+            <p class="text-gray-300 leading-relaxed mb-6">
+                ASTERIA implements an end-to-end scientific pipeline designed to ingest NASA Transiting Exoplanet Survey Satellite (TESS) data, eliminate instrument artifacts, and accurately score planetary transit candidates.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div class="bg-black/40 border border-white/10 p-5 rounded-xl">
+                    <h4 class="font-display font-semibold text-white mb-2 flex items-center gap-2">
+                        <span class="text-starlight font-mono text-sm">01</span> Box Least Squares (BLS)
+                    </h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Evaluates periodic step-function transits over trial frequency grids, measuring transit duration, period, epoch, and transit depth $\delta = (R_p / R_*)^2$.
+                    </p>
+                </div>
+                <div class="bg-black/40 border border-white/10 p-5 rounded-xl">
+                    <h4 class="font-display font-semibold text-white mb-2 flex items-center gap-2">
+                        <span class="text-starlight font-mono text-sm">02</span> Feature Engineering
+                    </h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Computes signal-to-noise ratio (SNR), transit count, secondary eclipse depth, and odd-even transit depth differentials to immediately discard eclipsing binaries.
+                    </p>
+                </div>
+                <div class="bg-black/40 border border-white/10 p-5 rounded-xl">
+                    <h4 class="font-display font-semibold text-white mb-2 flex items-center gap-2">
+                        <span class="text-magenta font-mono text-sm">03</span> Random Forest / XGBoost
+                    </h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Trained on verified TESS Objects of Interest (TOIs) to assign a calibrated probability score separating confirmed candidates from stellar flares.
+                    </p>
+                </div>
+                <div class="bg-black/40 border border-white/10 p-5 rounded-xl">
+                    <h4 class="font-display font-semibold text-white mb-2 flex items-center gap-2">
+                        <span class="text-magenta font-mono text-sm">04</span> SHAP Interpretability
+                    </h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Provides game-theoretic Shapley attribution for every prediction, delivering audit-grade evidence for follow-up space telescope observations.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-white/10 justify-between items-center">
+                <a href="/docs" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-starlight hover:underline text-sm font-semibold">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    Explore OpenAPI Endpoint Docs
+                </a>
+                <a href="/select" class="bg-starlight hover:brightness-110 text-white font-bold py-3 px-8 rounded-full btn-glow uppercase tracking-wider text-sm inline-block">
+                    Open Mission Portal →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts for Logo & Modals & Demo Simulator -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Sticky Nav Logo visibility
+            const logo = document.getElementById('nav-logo');
+            document.addEventListener('scroll', () => {
+                if (logo) {
+                    if (window.scrollY > window.innerHeight * 0.7) {
+                        logo.classList.remove('opacity-0');
+                    } else {
+                        logo.classList.add('opacity-0');
+                    }
+                }
+            });
+
+            // 2. Science Modal Logic
+            const modal = document.getElementById('science-modal');
+            const openBtn = document.getElementById('open-science-btn');
+            const closeBtn = document.getElementById('close-science-modal');
+
+            const openModal = () => {
+                if (!modal) return;
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.classList.add('opacity-100', 'pointer-events-auto');
+                document.body.style.overflow = 'hidden';
+            };
+
+            const closeModal = () => {
+                if (!modal) return;
+                modal.classList.remove('opacity-100', 'pointer-events-auto');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                document.body.style.overflow = '';
+            };
+
+            if (openBtn) openBtn.addEventListener('click', openModal);
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal();
+                });
+            }
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeModal();
+            });
+
+            // 3. Interactive Transit Simulator
+            const curvePath = document.getElementById('curve-path');
+            const curveStatus = document.getElementById('curve-status');
+            const toggleDipBtn = document.getElementById('btn-toggle-dip');
+            const addNoiseBtn = document.getElementById('btn-add-noise');
+
+            let isTransit = true;
+            let isNoise = false;
+
+            const transitD = "M 0 35 Q 70 35, 110 37 Q 130 37, 140 75 Q 150 82, 160 75 Q 170 37, 190 37 Q 240 35, 300 35";
+            const flatD = "M 0 35 Q 70 35, 110 35 Q 130 35, 150 35 Q 170 35, 190 35 Q 240 35, 300 35";
+            const noiseTransitD = "M 0 34 Q 30 37, 60 33 Q 90 36, 110 38 Q 130 42, 140 76 Q 150 85, 160 74 Q 170 41, 190 36 Q 230 32, 270 36 L 300 34";
+            const noiseFlatD = "M 0 34 Q 40 37, 80 33 Q 120 37, 150 33 Q 180 37, 220 34 Q 260 36, 300 34";
+
+            const updateCurve = () => {
+                if (!curvePath) return;
+                let targetD;
+                if (isTransit) {
+                    targetD = isNoise ? noiseTransitD : transitD;
+                    if (curveStatus) {
+                        curveStatus.innerText = isNoise ? "Transit + Stellar Noise" : "Transit Dip: -1.5%";
+                        curveStatus.className = "font-mono text-xs text-starlight border border-starlight/30 px-2 py-0.5 rounded bg-starlight/10";
+                    }
+                } else {
+                    targetD = isNoise ? noiseFlatD : flatD;
+                    if (curveStatus) {
+                        curveStatus.innerText = isNoise ? "Baseline Star (Noisy)" : "Constant Stellar Flux";
+                        curveStatus.className = "font-mono text-xs text-white/50 border border-white/20 px-2 py-0.5 rounded bg-white/5";
+                    }
+                }
+                curvePath.setAttribute('d', targetD);
+            };
+
+            if (toggleDipBtn) {
+                toggleDipBtn.addEventListener('click', () => {
+                    isTransit = !isTransit;
+                    toggleDipBtn.innerText = isTransit ? "Clear Transit" : "Trigger Transit";
+                    updateCurve();
+                });
+            }
+
+            if (addNoiseBtn) {
+                addNoiseBtn.addEventListener('click', () => {
+                    isNoise = !isNoise;
+                    addNoiseBtn.innerText = isNoise ? "Remove Noise" : "Add Noise";
+                    updateCurve();
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

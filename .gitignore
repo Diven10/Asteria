@@ -1,0 +1,38 @@
+# Environments & Dependencies
+.venv/
+venv/
+ENV/
+env/
+
+# Python byte code & caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Local Secrets & Configs
+.env
+*.local
+
+# macOS & System Files
+.DS_Store
+._*
+Thumbs.db
+
+# Local Data & Redundant Samples
+sample_pi_mensae.fits
+.vite/
+frontend/dist/
+frontend/node_modules/
+frontend/.vite/
+
+
