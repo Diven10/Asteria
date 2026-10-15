@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ASTERIA | ML Dashboard</title>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Grotesk:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -98,7 +98,7 @@
 
     <!-- HUD UI Layer -->
     <div id="ui-layer" class="absolute inset-0 z-10 pointer-events-none p-6 flex flex-col justify-between">
-        
+
         <!-- HEADER -->
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pointer-events-auto">
             <div class="flex items-center flex-wrap gap-4">
@@ -131,6 +131,10 @@
             </div>
 
             <div class="flex items-center space-x-3">
+                <a id="btn-download-report" href="/dashboard/download-report/pi-mensae-c" download="ASTERIA_Report_pi_mensae_c.pdf" class="glass-panel px-4 py-2 rounded-full text-xs font-mono text-emerald-400 hover:text-white border border-emerald-400/40 hover:border-emerald-400 transition uppercase tracking-wider flex items-center gap-1.5 shadow-[0_0_12px_rgba(52,211,153,0.2)]">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Download Report (PDF)</span>
+                </a>
                 <a href="/select" class="glass-panel px-4 py-2 rounded-full text-xs font-mono text-starlight hover:text-white border border-starlight/40 hover:border-starlight transition uppercase tracking-wider flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                     Upload FITS File
@@ -143,14 +147,14 @@
 
         <!-- MAIN HUD AREA -->
         <main class="flex-1 relative mt-8">
-            
+
             <!-- LEFT PANEL: Target Info -->
             <div class="absolute left-0 top-0 w-80 glass-panel p-6 rounded-2xl pointer-events-auto border-l-4 border-l-starlight">
                 <h3 class="font-mono text-xs text-white/50 uppercase tracking-widest mb-1">Target Identity</h3>
                 <div id="val-target-name" class="font-display text-2xl text-white font-bold mb-0.5">Pi Mensae c</div>
                 <div id="val-target-id" class="font-mono text-xs text-starlight font-semibold mb-1">TIC 261136679</div>
                 <div id="val-target-sub" class="text-xs text-white/40 mb-4">Super-Earth &bull; Sector 1</div>
-                
+
                 <div class="flex items-center space-x-2 mb-6">
                     <div id="val-status-dot" class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
                     <span id="val-status-text" class="font-mono text-xs text-green-400 uppercase">Data Ingested & Synced</span>
@@ -173,7 +177,7 @@
             </div>
 
             <!-- RIGHT PANELS: AI Analysis -->
-            
+
             <!-- Top Right: Verdict -->
             <div id="verdict-panel" class="absolute right-0 top-0 w-80 glass-panel p-6 rounded-2xl pointer-events-auto border-r-4 border-r-magenta">
                 <h3 class="font-mono text-xs text-white/50 uppercase tracking-widest mb-2">AI Inference Verdict</h3>
@@ -184,7 +188,7 @@
             <!-- Middle Right: Planetary Parameters -->
             <div class="absolute right-0 top-40 w-80 glass-panel p-6 rounded-2xl pointer-events-auto mt-6">
                 <h3 class="font-mono text-xs text-white/50 uppercase tracking-widest mb-4">Estimated Parameters</h3>
-                
+
                 <div class="space-y-4">
                     <div class="flex justify-between items-center border-b border-white/5 pb-2">
                         <span class="text-xs text-white/60 uppercase">Orbital Period</span>
@@ -298,7 +302,7 @@
             } else if (archetype === 'hot_jupiter' || archetype === 'scorched_gas_giant') {
                 // Scorching Gas Giant Atmospheric Bands
                 const isEvap = (archetype === 'scorched_gas_giant');
-                const bands = isEvap 
+                const bands = isEvap
                     ? ['#4a044e', '#701a75', '#831843', '#9f1239', '#c2410c', '#ea580c', '#f97316', '#701a75']
                     : ['#451a03', '#78350f', '#9a3412', '#c2410c', '#b45309', '#d97706', '#f59e0b', '#78350f'];
 
@@ -483,7 +487,7 @@
         const starsGeometry = new THREE.BufferGeometry();
         const starsCount = 2000;
         const posArray = new Float32Array(starsCount * 3);
-        
+
         for(let i=0; i < starsCount * 3; i++) {
             posArray[i] = (Math.random() - 0.5) * 100;
         }
@@ -533,20 +537,20 @@
 
         // --- CHART.JS LIGHT CURVE SETUP ---
         const ctx = document.getElementById('lightCurveChart').getContext('2d');
-        
+
         // Generate simulated transit data
         const dataPoints = 120;
         const labels = Array.from({length: dataPoints}, (_, i) => i);
         const data = [];
-        
+
         for(let i = 0; i < dataPoints; i++) {
             let baseFlux = 1.0 + (Math.random() * 0.004 - 0.002); // Noise
-            
+
             // Create U-shape transit dip between index 45 and 75
             if (i > 45 && i < 75) {
                 // Smooth ingress/egress using a simple parabola approximation
                 let centerDist = Math.abs(60 - i) / 15; // 0 at center, 1 at edges
-                let dip = 0.015 * (1 - Math.pow(centerDist, 2)); 
+                let dip = 0.015 * (1 - Math.pow(centerDist, 2));
                 baseFlux -= dip;
             }
             data.push(baseFlux);
@@ -685,7 +689,7 @@
                 const res = await fetch(`/dashboard/preset/${target}`);
                 if (res.ok) {
                     const preset = await res.json();
-                    
+
                     document.getElementById('val-target-name').innerText = preset.name;
                     document.getElementById('val-target-id').innerText = preset.target_id;
                     document.getElementById('val-target-sub').innerText = `${preset.type} • Sector ${preset.sector}`;
@@ -722,6 +726,14 @@
                     // Generate calibrated transit curve for this specific target
                     updateChartForTarget(target);
 
+                    // Sync Download Report Button
+                    const reportBtn = document.getElementById('btn-download-report');
+                    if (reportBtn) {
+                        const cleanName = target.replace(/-/g, '_');
+                        reportBtn.href = `/dashboard/download-report/${target}`;
+                        reportBtn.setAttribute('download', `ASTERIA_Report_${cleanName}.pdf`);
+                    }
+
                     // Sync selector value & URL
                     if (targetSelectEl && targetSelectEl.value !== target) {
                         targetSelectEl.value = target;
@@ -739,7 +751,7 @@
             document.getElementById('val-target-id').innerText = data.target_id || data.filename;
             document.getElementById('val-target-sub').innerText = `${data.planet_type || 'Exoplanet Candidate'} • Sector ${data.sector || 1} • ${data.total_points} Cadences`;
             document.getElementById('val-status-text').innerText = 'FITS Observation Analyzed';
-            
+
             if (data.stellar) {
                 document.getElementById('val-stellar-mass').innerHTML = `${data.stellar.mass}`;
                 document.getElementById('val-stellar-radius').innerHTML = `${data.stellar.radius}`;
@@ -750,7 +762,7 @@
             document.getElementById('val-depth').innerText = data.depth;
             document.getElementById('val-confidence').innerText = data.confidence;
             document.getElementById('val-verdict').innerText = data.verdict;
-            
+
             if (data.properties) {
                 document.getElementById('val-radius').innerText = data.properties.radius;
                 document.getElementById('val-temp').innerText = data.properties.temp;
@@ -784,6 +796,13 @@
 
             if (targetSelectEl) {
                 targetSelectEl.value = 'custom-upload';
+            }
+
+            const reportBtn = document.getElementById('btn-download-report');
+            if (reportBtn) {
+                const targetIdClean = (data.target_id || 'upload').replace(/[^a-zA-Z0-9]/g, '_');
+                reportBtn.href = `/dashboard/download-report/${targetIdClean}`;
+                reportBtn.setAttribute('download', `ASTERIA_Report_${targetIdClean}.pdf`);
             }
             history.replaceState(null, '', '/dashboard?mode=upload');
         }
@@ -838,7 +857,7 @@
             const points = 140;
             const labels = Array.from({length: points}, (_, i) => i);
             const data = [];
-            
+
             let dipCenter = 70;
             let dipDepth = 0.015;
             let dipWidth = 20;

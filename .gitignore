@@ -30,9 +30,9 @@ Thumbs.db
 
 # Local Data & Redundant Samples
 sample_pi_mensae.fits
+data/
 .vite/
 frontend/dist/
 frontend/node_modules/
 frontend/.vite/
-
-
+*.bak

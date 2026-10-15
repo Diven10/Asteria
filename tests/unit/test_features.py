@@ -4,7 +4,7 @@ import numpy as np
 from uuid import uuid4
 
 from app.contracts.models import DetectionCandidate, Mission
-from app.features.engineering import build_feature_vector, FEATURE_SCHEMA_VERSION
+from app.features.engineering import CANONICAL_FEATURES, build_feature_vector, FEATURE_SCHEMA_VERSION
 
 def _mock_candidate(
     period_days=5.0, depth=0.01, stellar_r=1.0, stellar_m=1.0, teff=5778
@@ -21,14 +21,16 @@ def _mock_candidate(
         snr=10.0,
         transit_count=4,
         odd_even_depth_difference=0.001,
-        secondary_eclipse_power=2.0,
+        secondary_eclipse_depth=0.002,
         stellar_radius_solar=stellar_r,
         stellar_mass_solar=stellar_m,
         stellar_teff_k=teff
     )
 
 def test_build_feature_vector_schema_version():
-    assert FEATURE_SCHEMA_VERSION == "1.1"
+    assert FEATURE_SCHEMA_VERSION == "2.0"
+    assert "secondary_eclipse_depth" in CANONICAL_FEATURES
+    assert len(CANONICAL_FEATURES) == 13
 
 def test_feature_vector_with_complete_data():
     cand = _mock_candidate(period_days=365.25, depth=0.01, stellar_r=2.0, stellar_m=1.0)
@@ -39,6 +41,8 @@ def test_feature_vector_with_complete_data():
     assert features["depth"] == 0.01
     assert features["snr"] == 10.0
     assert features["transit_count"] == 4.0
+    assert features["secondary_eclipse_depth"] == 0.002
+    assert features["secondary_eclipse_power"] == 0.002  # Backward compatibility alias
     
     # Stellar features
     assert features["stellar_radius_solar"] == 2.0
@@ -57,7 +61,7 @@ def test_feature_vector_with_missing_stellar_data():
     # Also test missing optional detection fields
     cand.snr = None
     cand.odd_even_depth_difference = None
-    cand.secondary_eclipse_power = None
+    cand.secondary_eclipse_depth = None
     
     features = build_feature_vector(cand)
     
@@ -67,7 +71,9 @@ def test_feature_vector_with_missing_stellar_data():
     assert np.isnan(features["stellar_teff_k"])
     assert np.isnan(features["snr"])
     assert np.isnan(features["odd_even_depth_difference"])
+    assert np.isnan(features["secondary_eclipse_depth"])
     assert np.isnan(features["secondary_eclipse_power"])
+
     
     # Derived features that depend on stellar properties should also be NaNs
     assert np.isnan(features["depth_scaled"])

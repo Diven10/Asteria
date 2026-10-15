@@ -93,8 +93,26 @@ class BLSDetector(TransitDetector):
         even_depth = depth_even[0] if isinstance(depth_even, (tuple, list)) else depth_even
         odd_even_diff = abs(odd_depth - even_depth) if (odd_depth and even_depth) else None
         
-        sec_eclipse = stats.get('depth_half', [0, 0])
-        sec_power = sec_eclipse[0] if isinstance(sec_eclipse, (tuple, list)) else sec_eclipse
+        # In Astropy BoxLeastSquares.compute_stats:
+        # - depth_phased: (depth, depth_err) evaluated at the fiducial period with phase offset by 0.5.
+        #   This is the true physical secondary eclipse measurement (occultation at half-orbital phase).
+        # - depth_half: (depth, depth_err) evaluated for a model with half the fiducial period (P/2).
+        #   This is the half-period harmonic, NOT a secondary eclipse.
+        phased_stat = stats.get('depth_phased', (0.0, 0.0))
+        sec_depth_raw = phased_stat[0] if isinstance(phased_stat, (tuple, list)) and len(phased_stat) >= 1 else phased_stat
+        if sec_depth_raw is not None and np.isfinite(sec_depth_raw):
+            # Sign convention: depth_phased is y_out - y_in at phase 0.5.
+            # Positive value indicates a flux dip (secondary eclipse). Clamped to >= 0 for physical depth.
+            sec_depth_val = max(0.0, float(sec_depth_raw))
+        else:
+            sec_depth_val = None
+
+        half_stat = stats.get('depth_half', (0.0, 0.0))
+        half_depth_raw = half_stat[0] if isinstance(half_stat, (tuple, list)) and len(half_stat) >= 1 else half_stat
+        if half_depth_raw is not None and np.isfinite(half_depth_raw):
+            half_depth_val = max(0.0, float(half_depth_raw))
+        else:
+            half_depth_val = None
 
         candidate = DetectionCandidate(
             light_curve_id=lc.light_curve_id,
@@ -108,7 +126,10 @@ class BLSDetector(TransitDetector):
             snr=float(snr) if snr > 0 else None,
             transit_count=transit_count,
             odd_even_depth_difference=float(odd_even_diff) if odd_even_diff is not None else None,
-            secondary_eclipse_power=float(sec_power) if sec_power else None,
+            secondary_eclipse_depth=sec_depth_val,
+            secondary_eclipse_power=sec_depth_val,
+            half_period_depth=half_depth_val,
         )
+
 
         return [candidate]

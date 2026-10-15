@@ -32,6 +32,10 @@ class CandidateResult(BaseModel):
     size_class: str
     habitable_zone_proxy: bool
     pdf_report_path: Optional[str] = None
+    validation_status: Optional[str] = None
+    is_synthetic_prediction: Optional[bool] = None
+    model_name: Optional[str] = None
+
 
 from app.catalog.tic_ctl import TicCtlCatalog
 from app.catalog.tic import TicCatalog
@@ -102,8 +106,12 @@ async def run_pipeline(request: PipelineRequest):
                 ops_breakdown=ops_res.breakdown,
                 size_class=props.size_class,
                 habitable_zone_proxy=props.habitable_zone_proxy,
-                pdf_report_path=pdf_path
+                pdf_report_path=pdf_path,
+                validation_status=getattr(val_results, "validation_status", "VALIDATED"),
+                is_synthetic_prediction=classified.metadata.get("is_synthetic_prediction", False),
+                model_name=classified.model_name
             )
+
             raw_results.append((ops_res, res))
             
         # Deterministic Ranking

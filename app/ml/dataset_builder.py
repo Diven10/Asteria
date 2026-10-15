@@ -1,7 +1,8 @@
 import pandas as pd
 import json
 from datetime import datetime, timezone
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
 from typing import Optional, List, Callable, Dict, Any, Tuple
 import logging
 
@@ -20,10 +21,12 @@ class AuthoritativeTarget:
     """
     target_id: str
     mission: Mission
-    authoritative_label: int  # e.g., 1 for planet, 0 for false positive
-    host_star_id: str
+    authoritative_label: Optional[int] = None  # 1 for planet, 0 for false positive, None if ambiguous
+    host_star_id: str = ""
     sector: Optional[int] = None
     provenance: str = "Unknown"
+    candidates: list[Any] = field(default_factory=list)
+
 
 @dataclass
 class BuilderConfig:

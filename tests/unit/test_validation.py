@@ -7,11 +7,13 @@ def _mock_classified(
     depth=0.01,
     snr=15.0,
     odd_even_diff=0.0001,
-    secondary_power=0.5,
+    secondary_power=0.0001,
+    secondary_depth=None,
     bls_power=50.0,
     stellar_r=1.0,
     prob=0.9
 ):
+    sec_d = secondary_depth if secondary_depth is not None else secondary_power
     cand = DetectionCandidate.model_construct(
         light_curve_id=uuid4(),
         target_id="TIC 123",
@@ -24,11 +26,13 @@ def _mock_classified(
         snr=snr,
         transit_count=4,
         odd_even_depth_difference=odd_even_diff,
-        secondary_eclipse_power=secondary_power,
+        secondary_eclipse_depth=sec_d,
+        secondary_eclipse_power=sec_d,
         stellar_radius_solar=stellar_r,
         stellar_mass_solar=1.0,
         stellar_teff_k=5778
     )
+
     return ClassifiedCandidate.model_construct(
         candidate=cand,
         prediction=PredictionLabel.PLANET_CANDIDATE,
@@ -66,7 +70,8 @@ def test_validation_odd_even_mismatch():
     assert "Difference ratio 0.500" in failed[0].reason
 
 def test_validation_secondary_eclipse():
-    classified = _mock_classified(bls_power=50.0, secondary_power=25.0)
+    classified = _mock_classified(depth=0.01, secondary_power=0.005)
+
     result = validate_candidate(classified)
     
     assert not result.is_valid_astrophysically
@@ -115,3 +120,23 @@ def test_validation_missing_catalog_info():
     assert len(missing_rules) == 4
     
     assert result.fused_probability == 0.9 # No penalty
+    assert result.validation_status == "INCONCLUSIVE"
+    assert result.is_inconclusive is True
+    assert result.untested_rule_count == 4
+
+def test_validation_status_fully_validated():
+    classified = _mock_classified(depth=0.01, odd_even_diff=0.0001, snr=20.0, secondary_power=0.0, stellar_r=1.0)
+    result = validate_candidate(classified)
+    assert result.is_valid_astrophysically is True
+    assert result.validation_status == "VALIDATED"
+    assert result.is_inconclusive is False
+    assert result.untested_rule_count == 0
+
+def test_validation_secondary_eclipse_depth_scale():
+    # When secondary eclipse is supplied as depth (<= candidate.depth)
+    classified = _mock_classified(depth=0.01, secondary_power=0.006, bls_power=50.0)
+    result = validate_candidate(classified)
+    assert not result.is_valid_astrophysically
+    assert result.validation_status == "FAILED"
+    failed = [r for r in result.rules if not r.passed]
+    assert any(r.rule_name == "secondary_eclipse" for r in failed)

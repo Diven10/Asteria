@@ -23,11 +23,17 @@ class ValidationResult:
     is_valid_astrophysically: bool
     fused_probability: float
     rules: List[RuleResult] = field(default_factory=list)
+    validation_status: str = "VALIDATED"  # "VALIDATED", "INCONCLUSIVE", or "FAILED"
+    is_inconclusive: bool = False
+    untested_rule_count: int = 0
 
     def dict(self):
         return {
             "is_valid_astrophysically": self.is_valid_astrophysically,
             "fused_probability": self.fused_probability,
+            "validation_status": self.validation_status,
+            "is_inconclusive": self.is_inconclusive,
+            "untested_rule_count": self.untested_rule_count,
             "rules": [r.__dict__ for r in self.rules]
         }
 
@@ -55,15 +61,34 @@ def validate_candidate(
     else:
         rules.append(RuleResult("odd_even", True, "Missing odd-even data", is_missing_data=True))
         
-    # 2. Secondary eclipse
-    if candidate.secondary_eclipse_power is not None and candidate.bls_power > 0:
-        ratio = candidate.secondary_eclipse_power / candidate.bls_power
+    # 2. Secondary eclipse (occultation at half-orbital phase)
+    # Statistic: depth_phased[0] from Astropy BoxLeastSquares.compute_stats()
+    # Units: Dimensionless fractional flux depth (Delta F / F)
+    # Sign convention: Positive for flux dips at phase 0.5; clamped to >= 0 for physical depth
+    # Validation equation: ratio = delta_sec / delta_pri
+    sec_depth = getattr(candidate, "secondary_eclipse_depth", None)
+    if sec_depth is None:
+        sec_depth = candidate.secondary_eclipse_power
+
+    if sec_depth is not None and candidate.depth > 0:
+        ratio = sec_depth / candidate.depth
         if ratio > config.secondary_eclipse_threshold:
-            rules.append(RuleResult("secondary_eclipse", False, f"Secondary power ratio {ratio:.3f} > {config.secondary_eclipse_threshold}"))
+            rules.append(RuleResult(
+                "secondary_eclipse",
+                False,
+                f"Secondary eclipse depth ratio {ratio:.3f} > {config.secondary_eclipse_threshold}"
+            ))
         else:
-            rules.append(RuleResult("secondary_eclipse", True, f"Secondary power ratio {ratio:.3f} within threshold"))
+            rules.append(RuleResult(
+                "secondary_eclipse",
+                True,
+                f"Secondary eclipse depth ratio {ratio:.3f} within threshold"
+            ))
+    elif sec_depth is not None and candidate.depth <= 0:
+        rules.append(RuleResult("secondary_eclipse", False, "Primary transit depth non-positive"))
     else:
         rules.append(RuleResult("secondary_eclipse", True, "Missing secondary eclipse data", is_missing_data=True))
+
         
     # 3. SNR screening
     if candidate.snr is not None:
@@ -91,20 +116,33 @@ def validate_candidate(
     else:
         rules.append(RuleResult("planet_radius", True, "Missing stellar radius for physical size check", is_missing_data=True))
 
-    # Fusion
+    # Fusion and Scientific Status Resolution
     failed_rules = [r for r in rules if not r.passed]
+    missing_rules = [r for r in rules if r.is_missing_data]
     is_valid = len(failed_rules) == 0
     
+    if len(failed_rules) > 0:
+        status = "FAILED"
+        is_inconclusive = False
+    elif len(missing_rules) > 0:
+        status = "INCONCLUSIVE"
+        is_inconclusive = True
+    else:
+        status = "VALIDATED"
+        is_inconclusive = False
+
     fused_score = classified.planet_probability
     
     # Penalize probability heavily if astrophysical checks fail
     if not is_valid:
-        # e.g. multiply by 0.1 for every failed critical rule
         penalty = 0.1 ** len(failed_rules)
         fused_score = fused_score * penalty
 
     return ValidationResult(
         is_valid_astrophysically=is_valid,
         fused_probability=fused_score,
-        rules=rules
+        rules=rules,
+        validation_status=status,
+        is_inconclusive=is_inconclusive,
+        untested_rule_count=len(missing_rules)
     )

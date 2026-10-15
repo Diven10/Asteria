@@ -97,13 +97,36 @@ class DetectionCandidate(ContractBase):
     snr: NonNegativeFloat | None = None
     transit_count: int = Field(default=0, ge=0)
     odd_even_depth_difference: NonNegativeFloat | None = None
+    secondary_eclipse_depth: NonNegativeFloat | None = None
     secondary_eclipse_power: NonNegativeFloat | None = None
+    half_period_depth: NonNegativeFloat | None = None
 
     # Optional astrophysical context; catalog lookup may populate these later.
     stellar_radius_solar: PositiveFloat | None = None
     stellar_mass_solar: PositiveFloat | None = None
     stellar_teff_k: PositiveFloat | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _sync_secondary_depth_and_power(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if data.get("secondary_eclipse_depth") is not None and data.get("secondary_eclipse_power") is None:
+                data["secondary_eclipse_power"] = data["secondary_eclipse_depth"]
+            elif data.get("secondary_eclipse_power") is not None and data.get("secondary_eclipse_depth") is None:
+                data["secondary_eclipse_depth"] = data["secondary_eclipse_power"]
+        return data
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name, value)
+        if name == "secondary_eclipse_power" and hasattr(self, "__dict__"):
+            if self.__dict__.get("secondary_eclipse_depth") != value:
+                super().__setattr__("secondary_eclipse_depth", value)
+        elif name == "secondary_eclipse_depth" and hasattr(self, "__dict__"):
+            if self.__dict__.get("secondary_eclipse_power") != value:
+                super().__setattr__("secondary_eclipse_power", value)
+
+
 
 
 class ClassifiedCandidate(ContractBase):

@@ -30,14 +30,27 @@ class TESSAcquisitionLayer(IngestionInterface):
             
         import lightkurve as lk
         try:
-            # Broad search to find available sectors
+            # Broad search to find available sectors (prefer SPOC, fallback to any TESS author)
             search_result = lk.search_lightcurve(f"TIC {target_id}", mission="TESS", author="SPOC")
+            if len(search_result) == 0:
+                search_result = lk.search_lightcurve(f"TIC {target_id}", mission="TESS")
             if len(search_result) == 0:
                 return None
             
+            # Sequence numbers correspond to TESS sectors in MAST/lightkurve search results
+            valid_sectors = []
+            if hasattr(search_result, "table") and "sequence_number" in search_result.table.colnames:
+                for s in search_result.table["sequence_number"]:
+                    try:
+                        if s is not None:
+                            valid_sectors.append(int(s))
+                    except (ValueError, TypeError):
+                        continue
+            elif hasattr(search_result, "sector"):
+                sectors = getattr(search_result, "sector", [])
+                valid_sectors = [int(s) for s in sectors if s is not None]
+
             # Deterministic selection: pick the lowest sector number
-            sectors = getattr(search_result, "sector", [])
-            valid_sectors = [int(s) for s in sectors if s is not None]
             if not valid_sectors:
                 return None
                 

@@ -16,6 +16,7 @@ class ExoplanetClassifier:
         
         if self.model_path and os.path.exists(self.model_path):
             self.model = joblib.load(self.model_path)
+            self.is_synthetic = bool(getattr(self.model, "is_synthetic", False) or getattr(self.model, "is_demo", False))
         else:
             # Fallback for demonstration / end-to-end pipeline completeness.
             # Strictly marked as synthetic.
@@ -24,24 +25,28 @@ class ExoplanetClassifier:
     def predict(self, candidate: DetectionCandidate) -> ClassifiedCandidate:
         features = build_feature_vector(candidate)
         
-        if self.is_synthetic:
-            # Synthetic fallback: not a real scientific prediction.
-            # E.g., depth > 0.01 might just artificially output a higher score.
-            snr_val = features["snr"]
-            prob = 0.8 if (not np.isnan(snr_val) and snr_val > 5.0) else 0.2
+        if self.is_synthetic and self.model is None:
+            # Synthetic fallback when no model file is installed: not a real scientific prediction.
+            snr_val = features.get("snr")
+            prob = 0.8 if (snr_val is not None and not np.isnan(snr_val) and snr_val > 5.0) else 0.2
             model_name = "Synthetic-Mock-Classifier"
             model_version = "0.0.0"
         else:
             import pandas as pd
             df = pd.DataFrame([features])
             
-            # Align features if model has specific expected feature names
             if hasattr(self.model, "feature_names_in_"):
                 model_cols = list(self.model.feature_names_in_)
                 for col in model_cols:
                     if col not in df.columns:
-                        df[col] = 0.0
+                        if col == "secondary_eclipse_power" and "secondary_eclipse_depth" in df.columns:
+                            df[col] = df["secondary_eclipse_depth"]
+                        elif col == "secondary_eclipse_depth" and "secondary_eclipse_power" in df.columns:
+                            df[col] = df["secondary_eclipse_power"]
+                        else:
+                            df[col] = 0.0
                 df = df[model_cols]
+
                 
             df = df.fillna(0)
                 
@@ -60,5 +65,8 @@ class ExoplanetClassifier:
             model_version=model_version,
             feature_schema_version=FEATURE_SCHEMA_VERSION,
             features=features,
-            metadata={"is_synthetic_prediction": self.is_synthetic}
+            metadata={
+                "is_synthetic_prediction": self.is_synthetic,
+                "is_scientifically_trained": bool(getattr(self.model, "is_scientifically_trained", False)) if self.model else False,
+            }
         )

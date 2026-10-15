@@ -42,6 +42,8 @@ class OPSResult(BaseModel):
     period_days: float # secondary sort key for deterministic ranking ties
     total_score: float
     breakdown: OPSBreakdown
+    heuristic_note: str = "Engineering heuristic priority metric; not an empirically calibrated validation score."
+
 
 def calculate_ops(
     classified: ClassifiedCandidate, 

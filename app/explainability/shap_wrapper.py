@@ -64,6 +64,18 @@ class ShapExplainer:
             )
             
         df = pd.DataFrame([features])
+        if hasattr(self.model, "feature_names_in_"):
+            model_cols = list(self.model.feature_names_in_)
+            for col in model_cols:
+                if col not in df.columns:
+                    if col == "secondary_eclipse_power" and "secondary_eclipse_depth" in df.columns:
+                        df[col] = df["secondary_eclipse_depth"]
+                    elif col == "secondary_eclipse_depth" and "secondary_eclipse_power" in df.columns:
+                        df[col] = df["secondary_eclipse_power"]
+                    else:
+                        df[col] = 0.0
+            df = df[model_cols]
+
         
         try:
             shap_values = self.explainer.shap_values(df)
